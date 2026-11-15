@@ -20,8 +20,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick ffmpeg
-          sudo sed -i 's/rights="none" pattern="@\"/rights="read|write" pattern="@"/' /etc/ImageMagick-6/policy.xml
-          pip install moviepy==1.0.3 pillow numpy
+          sudo find /etc -name "policy.xml" -exec sed -i 's/rights="none" pattern="@\"/rights="read|write" pattern="@"/' {} +
+          pip install moviepy==1.0.3 pillow==9.5.0 numpy
 
       - name: Reels Videosunu Oluştur
         run: python reels_olustur.py
