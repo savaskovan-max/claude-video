@@ -1,18 +1,24 @@
-import glob
+import os
 from moviepy.editor import (
-    ImageClip, TextClip, CompositeVideoClip, concatenate_videoclips
+    ImageClip, ColorClip, TextClip, CompositeVideoClip, concatenate_videoclips
 )
 
 GENISLIK, YUKSEKLIK = 1080, 1920
 FPS = 30
-HEDEF_SURE = 30.0  # Video her zaman tam 30 saniye olacak
+HEDEF_SURE = 30.0
 
-# Klasördeki tüm fotoğrafları otomatik bul ve sırala
-resimler = sorted(
-    glob.glob(".jpg") + glob.glob(".JPG") + 
-    glob.glob(".jpeg") + glob.glob(".JPEG") + 
-    glob.glob(".png") + glob.glob(".PNG")
-)
+# Depodaki tüm resim dosyalarını (uzantı ve büyük/küçük harf fark etmeksizin) bul
+gecerli_uzantilar = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff")
+resimler = []
+
+for kok, klasorler, dosyalar in os.walk("."):
+    if ".git" in kok or ".github" in kok:
+        continue
+    for dosya in sorted(dosyalar):
+        if dosya.lower().endswith(gecerli_uzantilar):
+            resimler.append(os.path.join(kok, dosya))
+
+print(f"Bulunan resim sayisi: {len(resimler)}", resimler)
 
 yazilar = [
     "Ankara'nın kalbinde bir tarih:\nSaraçoğlu Mahallesi",
@@ -31,7 +37,10 @@ def dikey_formatla(clip):
         clip = clip.crop(y_center=clip.h / 2, height=yeni_yukseklik)
     return clip.resize((GENISLIK, YUKSEKLIK))
 
-# Fotoğraf sayısına göre her bir fotoğrafın ekranda kalma süresini otomatik hesapla
+# Eğer hiç resim bulunamazsa bile videonun çökmemesi için 3 arka plan sahnesi oluştur
+if len(resimler) == 0:
+    resimler = ["yedek_1", "yedek_2", "yedek_3"]
+
 gecis_suresi = 0.4
 resim_sayisi = len(resimler)
 tek_klip_suresi = (HEDEF_SURE + (resim_sayisi - 1) * gecis_suresi) / resim_sayisi
@@ -39,14 +48,15 @@ tek_klip_suresi = (HEDEF_SURE + (resim_sayisi - 1) * gecis_suresi) / resim_sayis
 klipler = []
 
 for i, resim_yolu in enumerate(resimler):
-    klip = ImageClip(resim_yolu).set_duration(tek_klip_suresi)
-    klip = dikey_formatla(klip)
-    
-    # Fotoğraflar uzun süre ekranda kalacağı için yumuşak yakınlaşma/uzaklaşma efekti
-    if i % 2 == 0:
-        klip = klip.resize(lambda t: 1 + 0.015 * t).set_position(("center", "center"))
+    if resim_yolu.startswith("yedek_"):
+        klip = ColorClip(size=(GENISLIK, YUKSEKLIK), color=(30, 30, 35)).set_duration(tek_klip_suresi)
     else:
-        klip = klip.resize(lambda t: 1.15 - 0.015 * t).set_position(("center", "center"))
+        klip = ImageClip(resim_yolu).set_duration(tek_klip_suresi)
+        klip = dikey_formatla(klip)
+        if i % 2 == 0:
+            klip = klip.resize(lambda t: 1 + 0.015 * t).set_position(("center", "center"))
+        else:
+            klip = klip.resize(lambda t: 1.15 - 0.015 * t).set_position(("center", "center"))
 
     metin = yazilar[i % len(yazilar)]
 
