@@ -1,0 +1,33 @@
+name: Saraçoğlu Reels Üretici
+
+on:
+  workflow_dispatch:
+
+jobs:
+  video-uret:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dosyaları indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: ImageMagick ve Kütüphaneleri Kur
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick ffmpeg
+          sudo sed -i 's/rights="none" pattern="@\"/rights="read|write" pattern="@"/' /etc/ImageMagick-6/policy.xml
+          pip install moviepy==1.0.3 pillow numpy
+
+      - name: Reels Videosunu Oluştur
+        run: python reels_olustur.py
+
+      - name: Üretilen Videoyu İndirilebilir Yap
+        uses: actions/upload-artifact@v4
+        with:
+          name: saracoglu-reels-video
+          path: saracoglu_reels.mp4
